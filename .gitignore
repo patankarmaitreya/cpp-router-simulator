@@ -1,0 +1,6 @@
+/build
+router_sim
+.DS_Store
+
+.vscode/
+.cursor/

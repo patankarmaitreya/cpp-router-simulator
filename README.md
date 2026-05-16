@@ -1,6 +1,6 @@
 # C++ Router Simulator
 
-A project to simulate basic router pakent processing behaviour in c++17
+A project to simulate basic router packet processing behaviour in c++17
 
 # Current Status
 
