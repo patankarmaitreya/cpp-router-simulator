@@ -11,6 +11,7 @@ add_library(
 add_library(
     protocols
     protocols/ethernet.cpp
+    protocols/ipv4.cpp
 )
 
 add_library(

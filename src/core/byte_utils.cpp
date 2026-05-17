@@ -10,6 +10,15 @@ std::optional<uint16_t> read_u16_be(const std::vector<uint8_t>& buffer, size_t o
     return ((high << 8) | low);    
 }
 
+std::optional<uint16_t> read_u16_be(const uint8_t* buffer, size_t length, size_t offset){
+    if(offset > length || length - offset < 2) return std::nullopt;
+
+    uint16_t high = static_cast<uint16_t>(buffer[offset]);
+    uint16_t low = static_cast<uint16_t>(buffer[offset+1]);
+    
+    return ((high << 8) | low);    
+}
+
 std::optional<uint32_t> read_u32_be(const std::vector<uint8_t>& buffer, size_t offset){
     if(offset > buffer.size() || buffer.size() - offset < 4) return std::nullopt;
 
