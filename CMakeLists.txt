@@ -7,10 +7,13 @@ project(
     LANGUAGES CXX
 )
 
-add_executable(
-    router_sim
-    src/main.cpp
-)
+
+include(GNUInstallDirs)
+
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
+add_subdirectory(src)
+add_subdirectory(app)
 
 target_compile_options(
     router_sim
@@ -20,8 +23,7 @@ target_compile_options(
         -Wpedantic
 )
 
-target_compile_features(
-    router_sim
-    PRIVATE cxx_std_17
+install(
+    DIRECTORY "${PROJECT_SOURCE_DIR}/include/"
+    DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
 )
-
