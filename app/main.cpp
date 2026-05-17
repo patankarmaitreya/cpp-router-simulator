@@ -1,3 +1,4 @@
+#include "protocols/ethernet.hpp"
 #include <iostream>
 #include <optional>
 #include <string>
@@ -11,6 +12,24 @@ void print_banner(){
     std::cout << "C++ Router Simulator" << std::endl;
 }
 
+void print_hex8(uint8_t val){
+    std::cout << std::hex
+    << std::setw(2)
+    << std::setfill('0') 
+    << static_cast<int>(val)
+    << std::dec
+    << std::setfill(' ');
+}
+
+void print_hex16(uint16_t val){
+    std::cout << std::hex
+    << std::setw(4)
+    << std::setfill('0') 
+    << static_cast<int>(val)
+    << std::dec
+    << std::setfill(' ');
+}
+
 void print_bytes(const std::vector<uint8_t>& packet, size_t start, size_t count){
     if(start > packet.size() || count > packet.size() - start){
         std::cout << "Invalid range" << std::endl;
@@ -18,13 +37,10 @@ void print_bytes(const std::vector<uint8_t>& packet, size_t start, size_t count)
     }
     
     for(size_t i=start; i - start < count; i++){
-        std::cout << std::hex
-        << std::setw(2)
-        << std::setfill('0') 
-        << static_cast<int>(packet[i])
-        << " "; 
+       print_hex8(packet[i]);
+       std::cout << " ";
     }
-    std::cout << std::dec << std::endl;
+    
 }
 
 void print_packet_info(const std::vector<uint8_t>& packet){
@@ -48,7 +64,7 @@ void print_packet_info(const std::vector<uint8_t>& packet){
     std::cout << "\n";
 }
 
-void print_optional_u16(std::optional<uint16_t>& value){
+void print_optional_u16(const std::optional<uint16_t>& value){
     if(value.has_value())
     {
         std::cout << "0x"
@@ -65,7 +81,7 @@ void print_optional_u16(std::optional<uint16_t>& value){
     }
 }
 
-void print_optional_u32(std::optional<uint32_t>& value){
+void print_optional_u32(const std::optional<uint32_t>& value){
     if(value.has_value())
     {
         std::cout << "0x"
@@ -80,6 +96,35 @@ void print_optional_u32(std::optional<uint32_t>& value){
     else{
         std::cout << "No value returned" << std::endl;
     }
+}
+
+void print_mac(const std::vector<uint8_t>& packet, size_t start_index){
+    if(start_index > packet.size() || packet.size() - start_index < 6){
+        std::cout << "Invalid start for mac" << std::endl;
+        return;
+    }
+
+    for(size_t i = 0; i < 6; i++){
+        print_hex8(packet[i + start_index]);
+        if(i !=  5) std::cout << ":";
+    }
+}
+
+void print_mac(const MacAddress& mac){
+    for(size_t i = 0; i < 6; i++){
+        print_hex8(mac.bytes[i]);
+        if(i !=  5) std::cout << ":";
+    } 
+}
+
+bool extract_mac(const std::vector<uint8_t>& packet, size_t start_index, MacAddress& out_mac){
+    if(start_index > packet.size() || packet.size() - start_index < 6) return false;
+
+    for(size_t i=0; i<6; i++){
+        out_mac.bytes[i] = packet[i + start_index];
+    }
+
+    return true;
 }
 
 int main(){
@@ -112,6 +157,35 @@ int main(){
         0x00, 0x00, 0x00, 0x00
     };
 
+    MacAddress destination;
+    MacAddress source;
+
+    extract_mac(packet, 0, destination);
+    extract_mac(packet, 6, source);
+
+    std::cout << "Destination Mac: ";
+    print_mac(destination);
+    std::cout << std::endl;
+
+    std::cout << "Source Mac: ";
+    print_mac(source);
+    std::cout << std::endl;
+
+    std::optional<EthernetFrame> frame = parse_ethernet(packet);
+    if(frame.has_value()){
+        print_mac(frame->destination);
+        std::cout << std::endl;
+        print_mac(frame->source);
+        std::cout << std::endl;
+        print_hex16(frame->ethernet_type);
+        std::cout << ethernettype_to_string(frame->ethernet_type) << std::endl;
+    }
+    else{
+        std::cout << "Invalid Ethernet frame" << std::endl;
+    }
+
+    #pragma region chunk1 tests
+    /*
     std::optional<uint16_t> value = read_u16_be(packet, 12);
     std::cout << "Ethernet Type: ";
     print_optional_u16(value);
@@ -149,6 +223,10 @@ int main(){
     write_u32_be(zero_bytes4, 0, 0xc0a8010a);
     print_bytes(zero_bytes4, 0, zero_bytes4.size());
 
+    */
+    #pragma endregion
+
+    #pragma region chunk0 tests
     /*
     std::cout << "Packet 1 Info:" << std::endl;
     print_packet_info(packet);
@@ -166,7 +244,7 @@ int main(){
 
     std::cout << "Packets Processed: " << packet_count << std::endl;
     */
-
+    #pragma endregion
 
     return 0;
 }
