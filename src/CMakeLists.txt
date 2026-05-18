@@ -1,6 +1,7 @@
 add_library(
     core
     core/byte_utils.cpp
+    core/checksum.cpp
 )
 
 add_library(

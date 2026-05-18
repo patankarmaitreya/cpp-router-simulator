@@ -1,3 +1,4 @@
+#include "core/checksum.hpp"
 #include "protocols/ethernet.hpp"
 #include "protocols/ipv4.hpp"
 #include <iostream>
@@ -165,7 +166,58 @@ int main(){
     std::vector<uint8_t> zero_bytes4 {
         0x00, 0x00, 0x00, 0x00
     };
+
+    std::vector<uint8_t> ipv4_packet = {
+        0x45, 0x00, 0x00, 0x14,
+        0x12, 0x34, 0x00, 0x00,
+        0x40, 0x01, 0x53, 0xb2,
+        0x0a, 0x00, 0x00, 0x02,
+        0x0a, 0x00, 0x01, 0x02,
+    };
+
+    std::vector<uint8_t> ethernet_packet = {
+        0x00, 0x11, 0x22, 0x33, 0x44, 0x55,
+        0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff,
+        0x08, 0x00,
+        0x45, 0x00, 0x00, 0x14,
+        0x12, 0x34, 0x00, 0x00,
+        0x40, 0x01, 0x00, 0x00,
+        0x0a, 0x00, 0x00, 0x02,
+        0x0a, 0x00, 0x01, 0x02,
+        
+    };
+
+    std::vector<uint8_t> output = ipv4_packet;
+
+    write_u16_be(output, 10, 0x0000);
+
+    print_optional_u16(compute_ipv4_checksum(output.data(), 20));
+    std::cout << validate_ipv4_checksum(ipv4_packet.data(), 20) << std::endl;
+    
+    std::cout << update_ipv4_checksum(ethernet_packet, 14, 20) << std::endl;
+    
+    std::vector<uint8_t> ethernet_output = ethernet_packet;
+
+    size_t ipv4_offset = 14;
+    size_t checksum_offset = ipv4_offset + 10;
+
+    write_u16_be(ethernet_output, checksum_offset, 0x0000); 
+    std::cout << "Updated TTL: ";
+    print_hex8(ethernet_packet[14 + 8]);
+    std::cout << std::endl;
+
+    std::cout << "Updated checksum: ";
+    auto checksum = read_u16_be(ethernet_packet, 14 + 10);
+    print_optional_u16(checksum);
+
+    std::cout << "Valid after update: "
+            << validate_ipv4_checksum(ethernet_packet.data() + 14, 20)
+          << std::endl;
+
+
+    #pragma region chunk3 tests
     /*
+    
     uint8_t first_byte = 0x65;
 
     int version = static_cast<int>(first_byte >> 4);
@@ -175,19 +227,7 @@ int main(){
     std::cout << "Version: " << version << std::endl;
     std::cout << "IHL: " << IHL << std::endl;
     std::cout << "Header length: " << header_length << std::endl;
-    */
-
-    std::vector<uint8_t> ethernet_packet = {
-        0x00, 0x11, 0x22, 0x33, 0x44, 0x55,
-        0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff,
-        0x08, 0x00,
-        0x45, 0x00, 0x00, 0x18,
-        0x12, 0x34, 0x00, 0x00,
-        0x40, 0x01, 0x00, 0x00,
-        0x0a, 0x00, 0x00, 0x02,
-        0x0a, 0x00, 0x01, 0x02,
-        0xde, 0xad, 0xbe, 0xef
-    };
+    
 
     std::optional<EthernetFrame> ethernet_frame = parse_ethernet(ethernet_packet);
     
@@ -246,7 +286,8 @@ int main(){
     else{
         std::cout << "Invalid Ethernet frame" << std::endl;
     }
-
+    */
+    #pragma endregion
 
     #pragma region chunk2 tests
     /*
