@@ -5,8 +5,11 @@
 #include <cstdint>
 #include <optional>
 
+constexpr uint8_t kIpProtocolICMP = 1;
+constexpr uint8_t kIpProtocolTCP = 6;
+constexpr uint8_t kIpProtocolUDP = 17;
 
-struct IPAddress{
+struct IPv4Address{
     std::array<uint8_t, 4> bytes;
 };
 
@@ -21,8 +24,8 @@ struct IPv4Packet{
     uint8_t ttl;
     uint8_t protocol;
     uint16_t header_checksum;
-    IPAddress source_ip;
-    IPAddress destination_ip;
+    IPv4Address source_ip;
+    IPv4Address destination_ip;
     size_t payload_offset;
     size_t payload_length;
 };

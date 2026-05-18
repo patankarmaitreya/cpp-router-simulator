@@ -3,38 +3,40 @@
 #include <protocols/ethernet.hpp>
 #include <core/byte_utils.hpp>
 
-std::optional<EthernetFrame> parse_ethernet(const std::vector<uint8_t>& packet){
-    if(packet.size() < 14) return std::nullopt;
+constexpr size_t kEthernetHeaderLength = 14;
+constexpr size_t kDestinationMacOffset = 0;
+constexpr size_t kSourceMacOffset = 6;
+constexpr size_t kEtherTypeOffset = 12;
 
-    size_t offset = 0;
+std::optional<EthernetFrame> parse_ethernet(const std::vector<uint8_t>& packet){
+    if(packet.size() < kEthernetHeaderLength) return std::nullopt;
+
     EthernetFrame frame;
 
-    for(size_t i = 0; i< 6; i++){
-        frame.destination.bytes[i] = packet[i];
+    for(size_t i = 0; i< kMacAddressLength; i++){
+        frame.destination.bytes[i] = packet[i + kDestinationMacOffset];
     }
 
-    for(size_t i = 0; i< 6; i++){
-        frame.destination.bytes[i] = packet[6 + i];
+    for(size_t i = 0; i< kMacAddressLength; i++){
+        frame.destination.bytes[i] = packet[i + kSourceMacOffset];
     }
 
-    auto value = read_u16_be(packet, 12);
+    auto value = read_u16_be(packet, kEtherTypeOffset);
     if(!value) return std::nullopt;
 
     frame.ethernet_type = *value;
-    frame.payload_offset = 14;
-    frame.payload_length = packet.size()-14;
+    frame.payload_offset = kEthernetHeaderLength;
+    frame.payload_length = packet.size() - kEthernetHeaderLength;
 
     return frame;
 }
 
-std::string ethernettype_to_string(uint16_t value){
-    if(value == 0x0800){
-        return "IPv4";
+bool extract_mac(const std::vector<uint8_t>& packet, size_t start_index, MacAddress& out_mac){
+    if(start_index > packet.size() || packet.size() - start_index < kMacAddressLength) return false;
+
+    for(size_t i=0; i<kMacAddressLength; i++){
+        out_mac.bytes[i] = packet[i + start_index];
     }
-    else if(value == 0x0806){
-        return "ARP"; 
-    }
-    else{
-        return "Unknown";
-    }
+
+    return true;
 }

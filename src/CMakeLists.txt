@@ -20,6 +20,17 @@ add_library(
     ALIAS protocols
 )
 
+add_library(
+    demo
+    demo/packet_samples.cpp
+    demo/print_utils.cpp
+)
+
+add_library(
+    CPP-ROUTER-SIMULATOR::demo
+    ALIAS demo
+)
+
 target_compile_features(
     core
     PUBLIC cxx_std_17
@@ -27,6 +38,11 @@ target_compile_features(
 
 target_compile_features(
     protocols
+    PUBLIC cxx_std_17
+)
+
+target_compile_features(
+    demo
     PUBLIC cxx_std_17
 )
 
@@ -39,6 +55,13 @@ target_include_directories(
 
 target_include_directories(
     protocols
+    PUBLIC
+        "$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>"   
+        "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
+)
+
+target_include_directories(
+    demo
     PUBLIC
         "$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>"   
         "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
@@ -53,6 +76,13 @@ install(
 
 install(
     TARGETS protocols
+    ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+    LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+    RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
+)
+
+install(
+    TARGETS demo
     ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
     LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
     RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"

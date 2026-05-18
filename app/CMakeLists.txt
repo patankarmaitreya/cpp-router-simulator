@@ -7,6 +7,7 @@ target_link_libraries(
     router_sim
     PRIVATE CPP-ROUTER-SIMULATOR::core
     PRIVATE CPP-ROUTER-SIMULATOR::protocols
+    PRIVATE CPP-ROUTER-SIMULATOR::demo
 )
 
 install(
