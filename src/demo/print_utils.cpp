@@ -73,7 +73,7 @@ namespace demo::print {
         std::ostringstream oss;
         
         for(size_t i = 0; i < 4; i++){
-            oss << format_hex_u8(ip.bytes[i]);
+            oss << static_cast<int>(ip.bytes[i]);
             if(i !=  3) oss << ":";
         } 
 

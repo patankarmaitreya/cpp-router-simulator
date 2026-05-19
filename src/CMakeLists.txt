@@ -31,6 +31,16 @@ add_library(
     ALIAS demo
 )
 
+add_library(
+    router
+    router/routing_table.cpp
+)
+
+add_library(
+    CPP-ROUTER-SIMULATOR::router
+    ALIAS router
+)
+
 target_compile_features(
     core
     PUBLIC cxx_std_17
@@ -43,6 +53,12 @@ target_compile_features(
 
 target_compile_features(
     demo
+    PUBLIC cxx_std_17
+)
+
+
+target_compile_features(
+    router
     PUBLIC cxx_std_17
 )
 
@@ -62,6 +78,13 @@ target_include_directories(
 
 target_include_directories(
     demo
+    PUBLIC
+        "$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>"   
+        "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
+)
+
+target_include_directories(
+    router
     PUBLIC
         "$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>"   
         "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
@@ -83,6 +106,13 @@ install(
 
 install(
     TARGETS demo
+    ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+    LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+    RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
+)
+
+install(
+    TARGETS router
     ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
     LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
     RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"

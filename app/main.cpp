@@ -2,14 +2,13 @@
 #include "protocols/ethernet.hpp"
 #include "protocols/ipv4.hpp"
 #include <iostream>
-#include <optional>
-#include <ostream>
 #include <vector>
-#include <cstdint>
 
 #include<core/byte_utils.hpp>
 #include "demo/packet_samples.hpp"
 #include "demo/print_utils.hpp"
+#include "router/route.hpp"
+#include "router/routing_table.hpp"
 
 namespace samples = demo::samples;
 namespace print = demo::print;
@@ -134,15 +133,66 @@ void run_checksum_demo(){
     }
 }
 
+void run_router_demo(){
+    Route r1{
+        make_ipv4(10, 0, 0, 0),
+        24,
+        "eth0",
+        std::nullopt
+    };
+
+    Route r2{
+        make_ipv4(10, 0, 1, 0),
+        24,
+        "eth1",
+        std::nullopt
+    };
+
+    Route r3{
+        make_ipv4(10, 0, 1, 50),
+        32,
+        "eth1",
+        std::nullopt
+    };
+
+    Route r4{
+        make_ipv4(0, 0, 0, 0),
+        0,
+        "eth0",
+        make_ipv4(10, 0, 0, 254)
+    };
+
+    RoutingTable table;
+    table.add_route(r1);
+    table.add_route(r2);
+    table.add_route(r3);
+    table.add_route(r4);
+
+    
+    std::optional<Route> match = table.lookup_linear(make_ipv4(8, 8, 8, 8));
+    
+    std::cout << "Matched Route: ";
+    if(match.has_value()){ 
+        std::cout << demo::print::format_ipv4(match->network_ip) << std::endl;
+        std::cout << "Next Hop: ";
+        if(match->next_hop_ip.has_value()) std::cout << demo::print::format_ipv4(*match->next_hop_ip) << std::endl;
+        else std::cout << "None" <<std::endl;
+        std::cout << "Interfacr: " << match->interface_name << std::endl;
+    }
+    else std::cout << "None" << std::endl;
+}
+
 int main(){
     print::print_banner();
     std::cout << "\n";
 
-    run_ethernet_demo();
-    std::cout <<std::endl;
-    run_ipv4_demo();
-    std::cout <<std::endl;
-    run_checksum_demo();
+    run_router_demo();
+    std::cout << std::endl;
+    //run_ethernet_demo();
+    //std::cout <<std::endl;
+    //run_ipv4_demo();
+    //std::cout <<std::endl;
+    //run_checksum_demo();
 
     return 0;
 }

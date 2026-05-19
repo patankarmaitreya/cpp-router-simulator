@@ -30,6 +30,17 @@ std::optional<uint32_t> read_u32_be(const std::vector<uint8_t>& buffer, size_t o
     return ((high << 24) | (midhigh << 16) | (midlow << 8) | low);    
 }
 
+std::optional<uint32_t> read_u32_be(const uint8_t* buffer, size_t length, size_t offset){
+    if(offset > length || length - offset < 4) return std::nullopt;
+
+    uint32_t high = static_cast<uint32_t>(buffer[offset]);
+    uint32_t midhigh = static_cast<uint32_t>(buffer[offset+1]);
+    uint32_t midlow = static_cast<uint32_t>(buffer[offset+2]);
+    uint32_t low = static_cast<uint32_t>(buffer[offset+3]);
+    
+    return ((high << 24) | (midhigh << 16) | (midlow << 8) | low);    
+}
+
 bool write_u16_be(std::vector<uint8_t>& buffer, size_t offset, uint16_t value){
     if(offset > buffer.size() || buffer.size() - offset < 2) return false; 
   

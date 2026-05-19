@@ -8,6 +8,7 @@ target_link_libraries(
     PRIVATE CPP-ROUTER-SIMULATOR::core
     PRIVATE CPP-ROUTER-SIMULATOR::protocols
     PRIVATE CPP-ROUTER-SIMULATOR::demo
+    PRIVATE CPP-ROUTER-SIMULATOR::router
 )
 
 install(
