@@ -1,6 +1,7 @@
 #include "core/checksum.hpp"
 #include "protocols/arp.hpp"
 #include "protocols/ethernet.hpp"
+#include "protocols/icmp.hpp"
 #include "protocols/ipv4.hpp"
 
 #include <array>
@@ -125,8 +126,8 @@ void run_checksum_demo(){
     std::vector<uint8_t> output = ipv4_packet;
     write_u16_be(output, 10, 0x0000);
     
-    std::cout << print::format_hex_u16(compute_ipv4_checksum(output.data(), 20)) << std::endl;
-    if(validate_ipv4_checksum(ipv4_packet.data(), 20)) std::cout << "Valid checksum" << std::endl;
+    std::cout << print::format_hex_u16(compute_ones_complement_checksum(output.data(), 20)) << std::endl;
+    if(validate_oes_complement_checksum(ipv4_packet.data(), 20)) std::cout << "Valid checksum" << std::endl;
     else std::cout << "Invalid checksum" << std::endl;
 
     std::cout << "Original TTL: " << print::format_hex_u8(ipv4_packet[8]) << std::endl;
@@ -146,7 +147,7 @@ void run_checksum_demo(){
         std::cout << "Invalid checksum bytes" << std::endl;
     }
 
-    if (validate_ipv4_checksum(ipv4_packet.data(), 20)) {
+    if (validate_oes_complement_checksum(ipv4_packet.data(), 20)) {
         std::cout << "Valid checksum" << std::endl;
     } else {
         std::cout << "Invalid checksum" << std::endl;
@@ -365,8 +366,61 @@ int main(){
 
     RouterInterface interface;
 
-    run_Arp_reply_demo();
+    std::vector<uint8_t> test = {
+        0x08, 0x00, 0x48, 0x2d,
+        0x12, 0x34, 0x00, 0x01,
+        0xde, 0xad, 0xbe, 0xef
+    };
+
+    std::cout << validate_oes_complement_checksum(test.data(),test.size()) << std::endl;
+
+    auto out = test;
+    write_u16_be(test, 2, 0x0000);
+    std::cout << demo::print::format_hex_u16(compute_ones_complement_checksum(out.data(), 12)) << std::endl;
+
+    auto frame_icmp = parse_icmp(test.data(), test.size());
+
+    std::cout << "Request:" <<std::endl;
+    if(frame_icmp.has_value()){
+        std::cout << "Type: " << print::icmp_type_name(frame_icmp->type) << std::endl;
+        std::cout << "Code: " << print::format_hex_u8(frame_icmp->code) << std::endl;
+        std::cout << "Checksum: " << print::format_hex_u16(frame_icmp->checksum) << std::endl;
+        
+        if(frame_icmp->identifier.has_value()) std::cout << "identifier: " << print::format_hex_u16(*frame_icmp->identifier) << std::endl;
+        else std::cout << "identifier: None" << std::endl;
+
+        if(frame_icmp->sequence_number.has_value()) std::cout << "sequence: " << print::format_hex_u16(*frame_icmp->sequence_number) << std::endl;
+        else std::cout << "sequence: None" << std::endl;
+
+        std::cout << "Payload length: " << frame_icmp->payload_length << std::endl;
+    }
+    else std::cout << "ICMP parse failed" << std::endl;
     std::cout << std::endl;
+
+    if(frame_icmp.has_value()){
+        auto out_icmp = generate_icmp_reply_frame(test.data(), test.size(), *frame_icmp);
+        auto frame_icmp_out = parse_icmp(out_icmp.data(), test.size());
+
+        std::cout << "Reply:" <<std::endl;
+        if(frame_icmp_out.has_value()){
+            std::cout << "Type: " << print::icmp_type_name(frame_icmp_out->type) << std::endl;
+            std::cout << "Code: " << print::format_hex_u8(frame_icmp_out->code) << std::endl;
+            std::cout << "Checksum: " << print::format_hex_u16(frame_icmp_out->checksum) << std::endl;
+            
+            if(frame_icmp_out->identifier.has_value()) std::cout << "identifier: " << print::format_hex_u16(*frame_icmp_out->identifier) << std::endl;
+            else std::cout << "identifier: None" << std::endl;
+
+            if(frame_icmp_out->sequence_number.has_value()) std::cout << "sequence: " << print::format_hex_u16(*frame_icmp_out->sequence_number) << std::endl;
+            else std::cout << "sequence: None" << std::endl;
+
+            std::cout << "Payload length: " << frame_icmp_out->payload_length << std::endl;
+        }
+        else std::cout << "ICMP parse failed" << std::endl;
+        std::cout << std::endl;
+    }
+    else std::cout << "ICMP parse failed" << std::endl;
+    //run_Arp_reply_demo();
+    //std::cout << std::endl;
     //run_arp_parser_demo();
     //run_router_demo();
     //std::cout << std::endl;

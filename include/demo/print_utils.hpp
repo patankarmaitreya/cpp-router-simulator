@@ -22,6 +22,8 @@ namespace demo::print {
     std::string ethernet_type_name(uint16_t ether_type);
     std::string ip_protocol_name(uint8_t protocol);
 
+    std::string icmp_type_name(uint8_t type);
+
     void print_bytes(const std::vector<uint8_t>& data, size_t start, size_t count);
 
     std::string arp_opcode_to_string(ArpOpcode opcode);

@@ -94,6 +94,14 @@ namespace demo::print {
         return "Unknown";
     }
 
+    std::string icmp_type_name(uint8_t type) {
+        if (type == 8) return "Echo request";
+        if (type == 0) return "Echo reply";
+        if (type == 11) return "Time exceeded";
+        if (type == 3) return "Destination unreachable";
+        return "Unknown";
+    }
+
     std::string arp_opcode_to_string(ArpOpcode opcode){
         if(opcode == ArpOpcode::request) return "request";
         else if(opcode == ArpOpcode::reply) return "reply";

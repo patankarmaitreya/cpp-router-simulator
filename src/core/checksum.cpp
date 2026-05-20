@@ -1,45 +1,51 @@
 #include "core/checksum.hpp"
 #include "core/byte_utils.hpp"
+#include <cstdint>
 
-uint16_t compute_ipv4_checksum(const uint8_t* header, size_t header_length){
+uint16_t compute_ones_complement_checksum(const uint8_t* header, size_t header_length){
 
     uint32_t sum = 0;
     for(size_t i=0; i<header_length; i+=2){    
-        auto pair = read_u16_be(header, header_length, i);
-        if(pair.has_value()) sum += static_cast<uint32_t>(*pair);
-        else return 0;
+        if(i==header_length -1) {
+            uint16_t end_byte = static_cast<uint16_t>(header[i]) << 8;
+            sum += static_cast<uint32_t>(end_byte);
+        }
+        else{
+            auto pair = read_u16_be(header, header_length, i);
+            if(pair.has_value()) sum += static_cast<uint32_t>(*pair);
+            else return 0;
+        }
     }
 
     while(sum > 0xffff){
-        uint16_t high = static_cast<uint16_t>(sum >> 16);
-        uint16_t low = static_cast<uint16_t>(sum & 0xffff);
-
-        sum = static_cast<uint32_t>(high+low);
+        sum = (sum & 0xffff) + (sum >> 16);
     }
 
     return static_cast<uint16_t>((~sum) & 0xffff);
 }
 
-bool validate_ipv4_checksum(const uint8_t* header, size_t header_length)
+
+
+bool validate_oes_complement_checksum(const uint8_t* header, size_t header_length)
 {
     uint32_t sum = 0;
-    for(size_t i=0; i<header_length; ){    
-        auto pair = read_u16_be(header, header_length, i);
-        if(pair.has_value()) sum += static_cast<uint32_t>(*pair);
-        else return 0;
-
-        i += 2;
+    for(size_t i=0; i<header_length; i+=2){    
+        if(i==header_length -1) {
+            uint16_t end_byte = static_cast<uint16_t>(header[i]) << 8;
+            sum += static_cast<uint32_t>(end_byte);
+        }
+        else{
+            auto pair = read_u16_be(header, header_length, i);
+            if(pair.has_value()) sum += static_cast<uint32_t>(*pair);
+            else return 0;
+        }
     }
     
     while(sum > 0xffff){
-        uint16_t high = static_cast<uint16_t>(sum >> 16);
-        uint16_t low = static_cast<uint16_t>(sum & 0xffff);
-
-        sum = static_cast<uint32_t>(high+low);
+        sum = (sum & 0xffff) + (sum >> 16);
     }
 
-    if(static_cast<uint16_t>((~sum) & 0xffff) == 0x0000) return true;
-    else return false; 
+    return static_cast<uint16_t>((~sum) & 0xffff) == 0x0000;
 }
 
 bool decrement_ttl_and_update_checksum(std::vector<uint8_t>&  packet, size_t ipv4_header_offset, size_t header_length){
@@ -56,7 +62,7 @@ bool decrement_ttl_and_update_checksum(std::vector<uint8_t>&  packet, size_t ipv
 
     packet[ttl_offset] -= 1;
     write_u16_be(packet, checksum_offset, 0x0000);
-    uint16_t new_checksum = compute_ipv4_checksum(packet.data() + ipv4_header_offset,header_length);
+    uint16_t new_checksum = compute_ones_complement_checksum(packet.data() + ipv4_header_offset,header_length);
     write_u16_be(packet, checksum_offset, new_checksum);
 
     return true;
