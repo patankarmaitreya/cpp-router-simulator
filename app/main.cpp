@@ -1,20 +1,37 @@
 #include "core/checksum.hpp"
+#include "protocols/arp.hpp"
 #include "protocols/ethernet.hpp"
 #include "protocols/ipv4.hpp"
 
+#include <array>
+#include <chrono>
 #include <cstddef>
 #include <iostream>
+#include <optional>
+#include <string>
+#include <thread>
 #include <vector>
 
 #include<core/byte_utils.hpp>
 #include "demo/packet_samples.hpp"
 #include "demo/print_utils.hpp"
+#include "router/arp_cache.hpp"
 #include "router/route.hpp"
 #include "router/routing_table.hpp"
 #include <cstdint>
 
 namespace samples = demo::samples;
 namespace print = demo::print;
+
+struct RouterInterface{
+    std::string name = "eth0";
+    IPv4Address ip = make_ipv4(10, 0, 0, 1);
+    MacAddress mac{
+        std::array<uint8_t, 6>{0x00, 0x11, 0x22, 0x33, 0x44, 0x55}
+    };
+};
+
+
 
 void run_ethernet_demo(){
     std::vector<uint8_t> packet = samples::valid_ethernet_frame();
@@ -46,8 +63,8 @@ void run_ethernet_demo(){
 }
 
 void run_ipv4_demo(){
-    std::vector<uint8_t> packet = samples::valid_ipv4_frame();
-    std::vector<uint8_t> arp_packet = samples::valid_arp_frame();
+    std::vector<uint8_t> packet = samples::valid_ethernet_frame_ipv4();
+    std::vector<uint8_t> arp_packet = samples::valid_arp_request_frame();
 
     std::optional<EthernetFrame> ethernet_frame = parse_ethernet(packet);
 
@@ -103,7 +120,7 @@ void run_ipv4_demo(){
 }
 
 void run_checksum_demo(){
-    std::vector<uint8_t> ipv4_packet = samples::valid_ipv4_frame_no_ethernet_header();
+    std::vector<uint8_t> ipv4_packet = samples::valid_ipv4_frame();
 
     std::vector<uint8_t> output = ipv4_packet;
     write_u16_be(output, 10, 0x0000);
@@ -213,11 +230,145 @@ void run_router_demo(){
     }
 }
 
+//Incomplete demo
+void run_arp_demo(){
+    MacAddress test_mac{
+        std::array<uint8_t, kMacAddressLength>{0xbb, 0xbb, 0xbb, 0xbb, 0xbb, 0xbb}
+    };
+    MacAddress test_mac_new{
+        std::array<uint8_t, kMacAddressLength>{0xcc, 0xcc, 0xcc, 0xcc, 0xcc, 0xcc}
+    };
+
+    IPv4Address test_ip = make_ipv4(10, 0, 1, 2);
+    IPv4Address test_ip_new = make_ipv4(10, 0, 1, 3);
+
+    ARPCache data(std::chrono::milliseconds(100));
+
+    data.insert(test_ip, test_mac);
+    std::optional<ARPEntry> match1 = data.lookup(test_ip);
+    std::optional<ARPEntry> match2 = data.lookup(test_ip_new);
+
+    if(match1.has_value()) std::cout << "Found Mac for ip1: " << demo::print::format_mac(match1->mac) << std::endl;
+    else std::cout << "Found Mac for ip1: None" << std::endl;
+
+    if(match2.has_value()) std::cout << "Found Mac for ip2: " << demo::print::format_mac(match2->mac) << std::endl;
+    else std::cout << "Found Mac for ip2: None" << std::endl;
+
+    data.insert(test_ip, test_mac_new);
+    std::optional<ARPEntry> match1_new = data.lookup(test_ip);
+    if(match1_new.has_value()) std::cout << "Found Mac for ip1: " << demo::print::format_mac(match1_new->mac) << std::endl;
+    else std::cout << "Found Mac for ip1: None" << std::endl;
+
+    std::this_thread::sleep_for(std::chrono::milliseconds(150));
+
+    std::optional<ARPEntry> match1_new1 = data.lookup(test_ip);
+    if(match1_new1.has_value()) std::cout << "Found Mac for ip1: " << demo::print::format_mac(match1_new1->mac) << std::endl;
+    else std::cout << "Found Mac for ip1: None" << std::endl;
+}
+
+void run_arp_parser_demo(){
+    std::vector<uint8_t> packet = samples::valid_ethernet_frame_arp();
+
+    std::optional<EthernetFrame> ethernet_frame = parse_ethernet(packet);
+
+    if(ethernet_frame.has_value())
+    {   
+        std::cout << "Ethernet: " << std::endl;
+        std::cout << "Destination Mac: " << print::format_mac(ethernet_frame->destination) << std::endl;
+        std::cout << "Source Mac: " << print::format_mac(ethernet_frame->source) << std::endl;
+        std::cout << "Ethernet type hex: " << print::format_hex_u16(ethernet_frame->ethernet_type) << std::endl;
+        std::cout << "Ethernet type: " << print::ethernet_type_name(ethernet_frame->ethernet_type) << std::endl;
+        std::cout << std::endl;
+
+        if(ethernet_frame->ethernet_type == kEtherTypeARP){
+            std::optional<ArpPacket> frame = parse_arp(packet.data() + ethernet_frame->payload_offset, ethernet_frame->payload_length);
+            
+            std::cout << "ARP: " << std::endl;
+            if(frame.has_value()){
+                std::cout << "Opcode: " << print::arp_opcode_to_string(frame->opcode) << std::endl;
+                std::cout << "Sender mac: " << demo::print::format_mac(frame->sender_mac) << std::endl;
+                std::cout << "Sender ip: " << demo::print::format_ipv4(frame->sender_ip) << std::endl;
+                std::cout << "target mac: " << demo::print::format_mac(frame->target_mac) << std::endl;
+                std::cout << "target ip: " << demo::print::format_ipv4(frame->target_ip) << std::endl;
+            }
+            else{
+                std::cout << "Invalid ARP packet" << std::endl;
+            }
+        }
+        else{
+            std::cout << "Ethernet frame is not ARP frame" << std::endl;
+        }
+    }
+    else{
+        std::cout << "Invalid ethernet frame" << std::endl;
+    }
+}
+
+void run_Arp_reply_demo(){
+    RouterInterface interface;
+    std::vector<uint8_t> packet = samples::valid_ethernet_frame_arp();
+
+    std::vector<uint8_t> reply;
+    std::optional<EthernetFrame> ethernet_frame_old = parse_ethernet(packet);
+
+    if(ethernet_frame_old.has_value()){
+        if(ethernet_frame_old->ethernet_type == kEtherTypeARP){
+            std::optional<ArpPacket> frame = parse_arp(packet.data() + ethernet_frame_old->payload_offset, ethernet_frame_old->payload_length);
+        
+            if(frame.has_value()) reply = generate_arp_reply_frame(*ethernet_frame_old, *frame, interface.mac, interface.ip);
+            else std::cout << "Invalid ARP frame" << std::endl;
+        }
+        else std::cout << "Not ARP frame" << std::endl;
+    }
+    else std::cout << "Invalid Ethernet frame" << std::endl;
+
+    std::optional<EthernetFrame> ethernet_frame = parse_ethernet(reply);
+
+    if(ethernet_frame.has_value())
+    {   
+        std::cout << "Ethernet: " << std::endl;
+        std::cout << "Destination Mac: " << print::format_mac(ethernet_frame->destination) << std::endl;
+        std::cout << "Source Mac: " << print::format_mac(ethernet_frame->source) << std::endl;
+        std::cout << "Ethernet type hex: " << print::format_hex_u16(ethernet_frame->ethernet_type) << std::endl;
+        std::cout << "Ethernet type: " << print::ethernet_type_name(ethernet_frame->ethernet_type) << std::endl;
+        std::cout << std::endl;
+
+        if(ethernet_frame->ethernet_type == kEtherTypeARP){
+            std::optional<ArpPacket> frame = parse_arp(reply.data() + ethernet_frame->payload_offset, ethernet_frame->payload_length);
+            
+            std::cout << "ARP: " << std::endl;
+            if(frame.has_value()){
+                std::cout << "Opcode: " << print::arp_opcode_to_string(frame->opcode) << std::endl;
+                std::cout << "Sender mac: " << demo::print::format_mac(frame->sender_mac) << std::endl;
+                std::cout << "Sender ip: " << demo::print::format_ipv4(frame->sender_ip) << std::endl;
+                std::cout << "target mac: " << demo::print::format_mac(frame->target_mac) << std::endl;
+                std::cout << "target ip: " << demo::print::format_ipv4(frame->target_ip) << std::endl;
+            }
+            else{
+                std::cout << "Invalid ARP packet" << std::endl;
+            }
+        }
+        else{
+            std::cout << "Ethernet frame is not ARP frame" << std::endl;
+        }
+    }
+    else{
+        std::cout << "Invalid ethernet frame" << std::endl;
+    } 
+}
+
+
+
 int main(){
     print::print_banner();
     std::cout << "\n";
 
-    run_router_demo();
+    RouterInterface interface;
+
+    run_Arp_reply_demo();
+    std::cout << std::endl;
+    //run_arp_parser_demo();
+    //run_router_demo();
     //std::cout << std::endl;
     //run_ethernet_demo();
     //std::cout <<std::endl;

@@ -6,6 +6,7 @@
 
 #include "protocols/ethernet.hpp"
 #include "protocols/ipv4.hpp"
+#include "protocols/arp.hpp"
 
 namespace demo::print {
 
@@ -22,4 +23,6 @@ namespace demo::print {
     std::string ip_protocol_name(uint8_t protocol);
 
     void print_bytes(const std::vector<uint8_t>& data, size_t start, size_t count);
+
+    std::string arp_opcode_to_string(ArpOpcode opcode);
 }

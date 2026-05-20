@@ -1,4 +1,5 @@
 #include "demo/print_utils.hpp"
+#include "protocols/arp.hpp"
 #include "protocols/ethernet.hpp"
 
 #include <iomanip>
@@ -91,5 +92,11 @@ namespace demo::print {
         if (protocol == kIpProtocolTCP) return "TCP";
         if (protocol == kIpProtocolUDP) return "UDP";
         return "Unknown";
+    }
+
+    std::string arp_opcode_to_string(ArpOpcode opcode){
+        if(opcode == ArpOpcode::request) return "request";
+        else if(opcode == ArpOpcode::reply) return "reply";
+        else return "invalid";
     }
 }

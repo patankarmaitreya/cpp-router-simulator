@@ -13,6 +13,7 @@ add_library(
     protocols
     protocols/ethernet.cpp
     protocols/ipv4.cpp
+    protocols/arp.cpp
 )
 
 add_library(
@@ -34,6 +35,7 @@ add_library(
 add_library(
     router
     router/routing_table.cpp
+    router/arp_cache.cpp
 )
 
 add_library(

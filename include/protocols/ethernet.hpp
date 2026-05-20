@@ -7,6 +7,7 @@
 #include <vector>
 
 constexpr std::size_t kMacAddressLength = 6;
+constexpr size_t kEthernetHeaderLength = 14;
 
 constexpr uint16_t kEtherTypeIPv4 = 0x0800;
 constexpr uint16_t kEtherTypeARP  = 0x0806;
@@ -26,5 +27,7 @@ struct EthernetFrame{
 std::optional<EthernetFrame> parse_ethernet(const std::vector<uint8_t>& packet);
 
 std::string ethernettype_to_string(uint16_t value);
+
+std::optional<MacAddress> extract_mac(const uint8_t* packet, size_t length, size_t start_index);
 
 bool extract_mac(const std::vector<uint8_t>& packet, size_t start_index, MacAddress& out_mac);

@@ -1,4 +1,5 @@
 #include "protocols/ipv4.hpp"
+#include "protocols/ethernet.hpp"
 #include "core/byte_utils.hpp"
 #include <cstdint>
 #include <iostream>
@@ -62,6 +63,17 @@ std::optional<IPv4Packet> parse_ipv4(const uint8_t* data, size_t length){
     frame.payload_length = frame.total_length - frame.header_length;
 
     return frame;
+}
+
+std::optional<IPv4Address> extract_ip(const uint8_t* packet, size_t length, size_t start_index){
+    if(start_index > length || length - start_index < 4) return std::nullopt;
+
+    IPv4Address ip;
+    for(size_t i=0; i<kMacAddressLength; i++){
+        ip.bytes[i] = packet[i + start_index];
+    }
+
+    return ip;    
 }
 
 IPv4Address make_ipv4(uint8_t a, uint8_t b, uint8_t c, uint8_t d){

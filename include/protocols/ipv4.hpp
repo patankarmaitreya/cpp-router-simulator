@@ -33,6 +33,8 @@ struct IPv4Packet{
 
 std::optional<IPv4Packet> parse_ipv4(const uint8_t* data, size_t length);
 
+std::optional<IPv4Address> extract_ip(const uint8_t* packet, size_t length, size_t start_index);
+
 IPv4Address make_ipv4(uint8_t a, uint8_t b, uint8_t c, uint8_t d);
 
 uint32_t ipv4_to_uint32(const IPv4Address& ip);
