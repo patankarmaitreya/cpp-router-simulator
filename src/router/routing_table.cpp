@@ -1,10 +1,48 @@
 #include "router/routing_table.hpp"
 #include "protocols/ipv4.hpp"
 
+#include <cstddef>
+#include <cstdint>
 #include <optional>
+#include <string>
+#include <iostream>
 
-void RoutingTable::add_route(const Route& route) {
+void RoutingTable::add_route_linear(const Route& route) {
     routes.push_back(route);
+}
+
+void RoutingTable::add_route_trie(const Route& route) {
+    if(route.prefix_length > 32){
+        return;
+    }
+    
+    TrieNode* curr = &root;
+
+    if(route.prefix_length == 0){
+        root.route = route;
+        return;
+    }
+
+    int prefix_len = static_cast<int>(route.prefix_length);
+    uint32_t network_num = ipv4_to_uint32(route.network_ip); 
+
+    for(int i=31; i >= (32 - prefix_len); --i){
+        uint32_t bit = (network_num >> i) & 1;
+
+        if(bit == 1){
+            if(curr->one_node == nullptr){
+                curr->one_node = std::make_unique<TrieNode>();
+            }
+            curr = curr->one_node.get();
+        }
+        else{
+            if(curr->zero_node == nullptr){
+                curr->zero_node = std::make_unique<TrieNode>();
+            }
+            curr = curr->zero_node.get();
+        }
+    }
+    curr->route = route;
 }
 
 std::optional<Route> RoutingTable::lookup_linear(const IPv4Address& destination_ip) const{
@@ -20,6 +58,26 @@ std::optional<Route> RoutingTable::lookup_linear(const IPv4Address& destination_
     
     return best_match;
 }
+
+std::optional<Route> RoutingTable::lookup_trie(const IPv4Address& destination_ip) const{
+    const TrieNode* curr = &root;
+
+    uint32_t destination_num = ipv4_to_uint32(destination_ip); 
+    std::optional<Route> best_match = root.route;
+    for(int i=31; i>= 0; --i){
+        uint32_t bit = (destination_num >> i) & 1;
+
+        const TrieNode* nxt = (bit == 0) ? curr->zero_node.get() : curr->one_node.get();
+
+        if(nxt == nullptr) break;
+        curr = nxt;
+
+        if(curr->route.has_value()) best_match  = curr->route;
+    }
+
+    return best_match;
+}
+
 
 uint32_t generate_mask(size_t prefix_length){
     if(prefix_length > 32){

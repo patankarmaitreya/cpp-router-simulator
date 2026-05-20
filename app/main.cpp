@@ -1,6 +1,8 @@
 #include "core/checksum.hpp"
 #include "protocols/ethernet.hpp"
 #include "protocols/ipv4.hpp"
+
+#include <cstddef>
 #include <iostream>
 #include <vector>
 
@@ -9,6 +11,7 @@
 #include "demo/print_utils.hpp"
 #include "router/route.hpp"
 #include "router/routing_table.hpp"
+#include <cstdint>
 
 namespace samples = demo::samples;
 namespace print = demo::print;
@@ -136,7 +139,7 @@ void run_checksum_demo(){
 void run_router_demo(){
     Route r1{
         make_ipv4(10, 0, 0, 0),
-        24,
+        8,
         "eth0",
         std::nullopt
     };
@@ -163,23 +166,51 @@ void run_router_demo(){
     };
 
     RoutingTable table;
-    table.add_route(r1);
-    table.add_route(r2);
-    table.add_route(r3);
-    table.add_route(r4);
 
-    
-    std::optional<Route> match = table.lookup_linear(make_ipv4(8, 8, 8, 8));
-    
-    std::cout << "Matched Route: ";
-    if(match.has_value()){ 
-        std::cout << demo::print::format_ipv4(match->network_ip) << std::endl;
-        std::cout << "Next Hop: ";
-        if(match->next_hop_ip.has_value()) std::cout << demo::print::format_ipv4(*match->next_hop_ip) << std::endl;
-        else std::cout << "None" <<std::endl;
-        std::cout << "Interfacr: " << match->interface_name << std::endl;
+    table.add_route_linear(r1);
+    table.add_route_linear(r2);
+    table.add_route_linear(r3);
+    table.add_route_linear(r4);
+
+    table.add_route_trie(r1);
+    table.add_route_trie(r2);
+    table.add_route_trie(r3);
+    table.add_route_trie(r4); 
+
+    std::vector<IPv4Address> test_addreses = {
+        make_ipv4(10, 0, 1, 50),
+        make_ipv4(10, 0, 1, 99),
+        make_ipv4(10, 5, 6, 7),
+        make_ipv4(8, 8, 8, 8)
+    };
+
+    for(size_t i=0; i<test_addreses.size(); i++){
+        std::optional<Route> linear_match = table.lookup_linear(test_addreses[i]);
+        std::optional<Route> trie_match = table.lookup_trie(test_addreses[i]);
+        
+        uint32_t linear_match_num = 0x00;
+        uint32_t trie_match_num = 0x00;
+
+        std::cout << "Linear match: ";
+        if(linear_match.has_value()) {
+            std::cout << demo::print::format_ipv4(linear_match->network_ip) << std::endl;
+            linear_match_num = ipv4_to_uint32(linear_match->network_ip);
+        }
+        else std::cout << "None" << std::endl;
+
+        std::cout << "Trie match: ";
+        if(trie_match.has_value()) {
+            std::cout << demo::print::format_ipv4(trie_match->network_ip) << std::endl;
+            trie_match_num = ipv4_to_uint32(trie_match->network_ip);
+        }
+        else std::cout << "None" << std::endl;
+
+        std::cout << "Match same: ";
+        if(linear_match_num == trie_match_num) std::cout << "Yes" << std::endl;
+        else std::cout << "No" <<std::endl;
+
+        std::cout << std::endl;
     }
-    else std::cout << "None" << std::endl;
 }
 
 int main(){
@@ -187,7 +218,7 @@ int main(){
     std::cout << "\n";
 
     run_router_demo();
-    std::cout << std::endl;
+    //std::cout << std::endl;
     //run_ethernet_demo();
     //std::cout <<std::endl;
     //run_ipv4_demo();
