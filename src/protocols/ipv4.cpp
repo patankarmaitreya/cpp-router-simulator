@@ -6,10 +6,7 @@
 #include <optional>
 
 std::optional<IPv4Packet> parse_ipv4(const uint8_t* data, size_t length){
-    if(length < 20){
-        std::cout << "lenghth less than minimum ipv4 packet legth of 20" << std::endl;
-        return std::nullopt;
-    }
+    if(length < 20) return std::nullopt;
     IPv4Packet frame;
 
     frame.version = data[0] >> 4;

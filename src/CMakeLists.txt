@@ -15,6 +15,8 @@ add_library(
     protocols/ipv4.cpp
     protocols/arp.cpp
     protocols/icmp.cpp
+    protocols/tcp.cpp
+    protocols/udp.cpp
 )
 
 add_library(
