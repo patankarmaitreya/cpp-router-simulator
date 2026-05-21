@@ -1,10 +1,12 @@
 #include "demo/print_utils.hpp"
 #include "protocols/arp.hpp"
 #include "protocols/ethernet.hpp"
+#include "router/forwarding_engine.hpp"
 
 #include <iomanip>
 #include <iostream>
 #include <sstream>
+#include <string>
 
 namespace demo::print {
     void print_banner(){
@@ -63,7 +65,7 @@ namespace demo::print {
         std::ostringstream oss;
         
         for(size_t i = 0; i < 6; i++){
-            oss << format_hex_u8(mac.bytes[i]);
+            oss << static_cast<int>((mac.bytes[i]));
             if(i !=  5) oss << ":";
         } 
 
@@ -75,7 +77,7 @@ namespace demo::print {
         
         for(size_t i = 0; i < 4; i++){
             oss << static_cast<int>(ip.bytes[i]);
-            if(i !=  3) oss << ":";
+            if(i !=  3) oss << ".";
         } 
 
         return oss.str();
@@ -106,5 +108,29 @@ namespace demo::print {
         if(opcode == ArpOpcode::request) return "request";
         else if(opcode == ArpOpcode::reply) return "reply";
         else return "invalid";
+    }
+
+    void print_interface_info(const RouterInterface& interface){
+        std::cout << "Name: " << interface.name <<std::endl;
+        std::cout << "ip: " << demo::print::format_ipv4(interface.ip) << std::endl;
+        std::cout << "mac: " << demo::print::format_mac(interface.mac) << std::endl;
+    }
+    
+    void print_packet_info(const PacketResult &packet){
+        std::cout << "Action: ";
+
+        if(packet.action == ForwardAction::Forwarded) std::cout << "Forwarded" <<std::endl;
+        else if(packet.action == ForwardAction::Dropped) std::cout << "Dropped" <<std::endl;
+        else if(packet.action == ForwardAction::ArpReplyGenerated) std::cout << "ArpReplyGenerated" <<std::endl;
+        else if(packet.action == ForwardAction::IcmpEchoReplyGenerated) std::cout << "IcmpEchoReplyGenerated" <<std::endl;
+        else if(packet.action == ForwardAction::IcmpTimeExceededGenerated) std::cout << "IcmpTimeExceededGenerated" <<std::endl;
+        else if(packet.action == ForwardAction::IcmpDestinationUnreachableGenerated) std::cout << "IcmpDestinationUnreachableGenerated" <<std::endl;
+        else if(packet.action == ForwardAction::QueuedPendingArp) std::cout << "QueuedPendingArp" <<std::endl;
+        else std::cout << "Unknown" <<std::endl;
+
+        std::cout << "Reason: " << packet.reason <<std::endl;
+
+        std::cout << "Interface: ";
+        if(packet.output_interface.has_value()) print_interface_info(*packet.output_interface);
     }
 }

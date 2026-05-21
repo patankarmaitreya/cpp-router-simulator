@@ -26,7 +26,7 @@ uint16_t compute_ones_complement_checksum(const uint8_t* header, size_t header_l
 
 
 
-bool validate_oes_complement_checksum(const uint8_t* header, size_t header_length)
+bool validate_ones_complement_checksum(const uint8_t* header, size_t header_length)
 {
     uint32_t sum = 0;
     for(size_t i=0; i<header_length; i+=2){    

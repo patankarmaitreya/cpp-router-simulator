@@ -37,6 +37,7 @@ add_library(
     router
     router/routing_table.cpp
     router/arp_cache.cpp
+    router/forwarding_engine.cpp
 )
 
 add_library(

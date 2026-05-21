@@ -3,6 +3,8 @@
 #include <cstdint>
 #include <optional>
 #include <protocols/icmp.hpp>
+#include <protocols/ethernet.hpp>
+#include <protocols/ipv4.hpp>
 #include <vector>
 
 std::optional<IcmpPacket> parse_icmp(const uint8_t *data, size_t length){

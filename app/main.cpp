@@ -9,29 +9,22 @@
 #include <cstddef>
 #include <iostream>
 #include <optional>
-#include <string>
 #include <thread>
 #include <vector>
+#include <iostream>
 
 #include<core/byte_utils.hpp>
 #include "demo/packet_samples.hpp"
 #include "demo/print_utils.hpp"
 #include "router/arp_cache.hpp"
+#include "router/forwarding_engine.hpp"
 #include "router/route.hpp"
 #include "router/routing_table.hpp"
+#include "router/interface.hpp"
 #include <cstdint>
 
 namespace samples = demo::samples;
 namespace print = demo::print;
-
-struct RouterInterface{
-    std::string name = "eth0";
-    IPv4Address ip = make_ipv4(10, 0, 0, 1);
-    MacAddress mac{
-        std::array<uint8_t, 6>{0x00, 0x11, 0x22, 0x33, 0x44, 0x55}
-    };
-};
-
 
 
 void run_ethernet_demo(){
@@ -127,7 +120,7 @@ void run_checksum_demo(){
     write_u16_be(output, 10, 0x0000);
     
     std::cout << print::format_hex_u16(compute_ones_complement_checksum(output.data(), 20)) << std::endl;
-    if(validate_oes_complement_checksum(ipv4_packet.data(), 20)) std::cout << "Valid checksum" << std::endl;
+    if(validate_ones_complement_checksum(ipv4_packet.data(), 20)) std::cout << "Valid checksum" << std::endl;
     else std::cout << "Invalid checksum" << std::endl;
 
     std::cout << "Original TTL: " << print::format_hex_u8(ipv4_packet[8]) << std::endl;
@@ -147,7 +140,7 @@ void run_checksum_demo(){
         std::cout << "Invalid checksum bytes" << std::endl;
     }
 
-    if (validate_oes_complement_checksum(ipv4_packet.data(), 20)) {
+    if (validate_ones_complement_checksum(ipv4_packet.data(), 20)) {
         std::cout << "Valid checksum" << std::endl;
     } else {
         std::cout << "Invalid checksum" << std::endl;
@@ -358,21 +351,14 @@ void run_Arp_reply_demo(){
     } 
 }
 
-
-
-int main(){
-    print::print_banner();
-    std::cout << "\n";
-
-    RouterInterface interface;
-
+void run_icmp_demo(){
     std::vector<uint8_t> test = {
         0x08, 0x00, 0x48, 0x2d,
         0x12, 0x34, 0x00, 0x01,
         0xde, 0xad, 0xbe, 0xef
     };
 
-    std::cout << validate_oes_complement_checksum(test.data(),test.size()) << std::endl;
+    std::cout << validate_ones_complement_checksum(test.data(),test.size()) << std::endl;
 
     auto out = test;
     write_u16_be(test, 2, 0x0000);
@@ -419,6 +405,47 @@ int main(){
         std::cout << std::endl;
     }
     else std::cout << "ICMP parse failed" << std::endl;
+}
+
+void print_interface_info(const RouterInterface& interface){
+    std::cout << "Name: " << interface.name <<std::endl;
+    std::cout << "ip: " << demo::print::format_ipv4(interface.ip) << std::endl;
+    std::cout << "mac: " << demo::print::format_mac(interface.mac) << std::endl;
+}
+
+int main(){
+    print::print_banner();
+    std::cout << "\n";
+
+    RouterInterface r1{
+        "eth0", 
+        make_mac(0x00, 0x11, 0x22, 0x33, 0x44, 0x55), 
+        make_ipv4(10, 0, 0, 1)
+    };
+
+
+    RouterInterface r2{
+        "eth1", 
+        make_mac(0x00, 0x11, 0x22, 0x33, 0x44, 0x66), 
+        make_ipv4(10, 0, 1, 1)
+    };
+
+    PacketResult p{
+        ForwardAction::Forwarded,
+        "Matched a route",
+        r1,
+        std::nullopt
+    };
+
+    demo::print::print_packet_info(p);    
+
+    std::vector<RouterInterface> interface_table = {r1, r2};
+
+    /*
+    for(size_t i=0; i<interface_table.size(); i++){
+        if(interface_table[i].name == "eth0") print_interface_info(interface_table[i]);
+    }
+    */
     //run_Arp_reply_demo();
     //std::cout << std::endl;
     //run_arp_parser_demo();
