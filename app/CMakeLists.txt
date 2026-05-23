@@ -11,6 +11,14 @@ target_link_libraries(
     PRIVATE CPP-ROUTER-SIMULATOR::router
 )
 
+target_compile_options(
+    router_sim
+    PRIVATE
+        -Wall
+        -Wextra
+        -Wpedantic
+)
+
 install(
     TARGETS router_sim
     RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"

@@ -15,13 +15,11 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 add_subdirectory(src)
 add_subdirectory(app)
 
-target_compile_options(
-    router_sim
-    PRIVATE
-        -Wall
-        -Wextra
-        -Wpedantic
-)
+include(CTest)
+
+if(BUILD_TESTING)
+    add_subdirectory(tests)
+endif()
 
 install(
     DIRECTORY "${PROJECT_SOURCE_DIR}/include/"

@@ -2,7 +2,6 @@
 #include "protocols/ethernet.hpp"
 #include "core/byte_utils.hpp"
 #include <cstdint>
-#include <iostream>
 #include <optional>
 
 std::optional<IPv4Packet> parse_ipv4(const uint8_t* data, size_t length){
