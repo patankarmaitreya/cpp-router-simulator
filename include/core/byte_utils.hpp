@@ -1,7 +1,9 @@
 #pragma once
 
+#include <cstdint>
 #include <optional>
 #include <vector>
+#include <cstddef>
 
 std::optional<uint16_t> read_u16_be(const std::vector<uint8_t>& buffer, size_t offset);
 
