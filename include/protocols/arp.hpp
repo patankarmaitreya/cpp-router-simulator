@@ -23,4 +23,4 @@ struct ArpPacket{
 
 std::optional<ArpPacket> parse_arp(const uint8_t* data, size_t length);
 
-std::vector<uint8_t> generate_arp_reply_frame(const EthernetFrame& ethernet_header, const ArpPacket& arp_header, MacAddress router_mac, IPv4Address router_ip);
+std::vector<uint8_t> build_arp_reply_payload(const ArpPacket& arp_header, MacAddress router_mac, IPv4Address router_ip);

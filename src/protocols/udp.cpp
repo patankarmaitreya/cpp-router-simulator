@@ -9,19 +9,19 @@ std::optional<UdpDatagram> parse_udp(const uint8_t *data, size_t length)
 
     UdpDatagram diagram;
 
-    auto source_port = read_u16_be(data, 0, length);
+    auto source_port = read_u16_be(data, length, 0);
     if(source_port.has_value()) diagram.source_port = *source_port;
     else return std::nullopt;
 
-    auto destination_port = read_u16_be(data, 2, length);
+    auto destination_port = read_u16_be(data, length, 2);
     if(destination_port.has_value()) diagram.destination_port = *destination_port;
     else return std::nullopt;
 
-    auto udp_length = read_u16_be(data, 4, length);
+    auto udp_length = read_u16_be(data, length, 4);
     if(udp_length.has_value()) diagram.length = *udp_length;
     else return std::nullopt;
 
-    auto checksum = read_u16_be(data, 6, length);
+    auto checksum = read_u16_be(data, length, 6);
     if(checksum.has_value()) diagram.checksum = *checksum;
     else return std::nullopt;
 

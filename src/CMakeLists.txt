@@ -27,6 +27,7 @@ add_library(
 add_library(
     demo
     demo/packet_samples.cpp
+    demo/router_samples.cpp
     demo/print_utils.cpp
 )
 
@@ -40,6 +41,7 @@ add_library(
     router/routing_table.cpp
     router/arp_cache.cpp
     router/forwarding_engine.cpp
+    router/packet_builder.cpp 
 )
 
 add_library(

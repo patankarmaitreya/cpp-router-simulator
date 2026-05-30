@@ -1,8 +1,10 @@
 #include "protocols/ipv4.hpp"
+#include "core/checksum.hpp"
 #include "protocols/ethernet.hpp"
 #include "core/byte_utils.hpp"
 #include <cstdint>
 #include <optional>
+#include <vector>
 
 std::optional<IPv4Packet> parse_ipv4(const uint8_t* data, size_t length){
     if(length < 20) return std::nullopt;
@@ -85,4 +87,36 @@ uint32_t ipv4_to_uint32(const IPv4Address &ip){
             static_cast<uint32_t>(ip.bytes[2] << 8) |
             static_cast<uint32_t>(ip.bytes[3]) 
         );
+}
+
+std::vector<uint8_t> generate_ipv4_header(const IPv4Address& destinationIP, const IPv4Address& sourceIP, const uint8_t protocol, const std::vector<uint8_t>& payload)
+{
+    std::vector<uint8_t> header(20);
+
+    header[0] = 0x45;//version + ihl
+     
+    header[1] = 0x00;//dcp/ecn
+    
+    size_t total_length = 20 + payload.size();
+    write_u16_be(header, 2, total_length);//total length
+
+    write_u16_be(header, 4, 0);//id
+    write_u16_be(header, 6, 0);//flags
+
+    header[8] = 0x40;//ttl
+    header[9] = protocol;//protocol
+
+    write_u16_be(header, 10, 0);
+
+    for(int i=0; i<sourceIP.bytes.size(); i++){
+        header[12+i] = sourceIP.bytes[i];
+    }
+
+    for(int i=0; i<destinationIP.bytes.size(); i++){
+        header[16+i] = destinationIP.bytes[i];
+    }
+
+    write_u16_be(header, 10, compute_ones_complement_checksum(header.data(), header.size()));
+
+    return header;
 }

@@ -1,0 +1,14 @@
+[
+{
+  "directory": "/Users/maitreyapatankar/Documents/Projects/cpp-router-simulator/build/src",
+  "command": "/usr/bin/c++  -I/Users/maitreyapatankar/Documents/Projects/cpp-router-simulator/include -std=gnu++17 -arch arm64 -o CMakeFiles/core.dir/core/byte_utils.cpp.o -c /Users/maitreyapatankar/Documents/Projects/cpp-router-simulator/src/core/byte_utils.cpp",
+  "file": "/Users/maitreyapatankar/Documents/Projects/cpp-router-simulator/src/core/byte_utils.cpp",
+  "output": "src/CMakeFiles/core.dir/core/byte_utils.cpp.o"
+},
+{
+  "directory": "/Users/maitreyapatankar/Documents/Projects/cpp-router-simulator/build/app",
+  "command": "/usr/bin/c++  -I/Users/maitreyapatankar/Documents/Projects/cpp-router-simulator/include -std=gnu++17 -arch arm64 -Wall -Wextra -Wpedantic -o CMakeFiles/router_sim.dir/main.cpp.o -c /Users/maitreyapatankar/Documents/Projects/cpp-router-simulator/app/main.cpp",
+  "file": "/Users/maitreyapatankar/Documents/Projects/cpp-router-simulator/app/main.cpp",
+  "output": "app/CMakeFiles/router_sim.dir/main.cpp.o"
+}
+]

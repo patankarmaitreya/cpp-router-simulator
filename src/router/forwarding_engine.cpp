@@ -1,13 +1,15 @@
-#include "core/byte_utils.hpp"
 #include "core/checksum.hpp"
 #include "protocols/arp.hpp"
 #include "protocols/ethernet.hpp"
 #include "protocols/icmp.hpp"
 #include "protocols/ipv4.hpp"
+#include "router/arp_cache.hpp"
 #include "router/interface.hpp"
+#include "router/routing_table.hpp"
 #include <cstddef>
 #include <optional>
 #include <router/forwarding_engine.hpp>
+#include <router/packet_builder.hpp>
 
 std::optional<RouterInterface> ForwardingEngine::find_interface_by_name( const std::string& name) const{
     for(size_t i=0; i<router_interface.size(); i++){
@@ -66,25 +68,26 @@ PacketResult ForwardingEngine::process_packet(std::vector<std::uint8_t> frame, R
 
                 if(arp_frame->opcode == ArpOpcode::request)
                 {
-                    bool router_frame = false;
+ 
                     std::optional<RouterInterface> match_interface;
 
                     for(size_t i=0; i < router_interface.size(); i++){
                         if(ipv4_to_uint32(arp_frame->target_ip) == ipv4_to_uint32(router_interface[i].ip)){
-                            router_frame = true;
                             match_interface = router_interface[i];
                             break;
                         }
                     }
 
-                    if(router_frame && match_interface.has_value())
-                    {
-                        auto out_frame = generate_arp_reply_frame(*ethernet_frame, *arp_frame, match_interface->mac, match_interface->ip);
+                    if(match_interface.has_value())
+                    {   
+                        //destination ip not requried for arp reply hecnce passing placeholder
+                        ArpReplyBuilderInfo info(frame, match_interface->mac, ethernet_frame->source, match_interface->ip, make_ipv4(0, 0, 0,0 ), *arp_frame);
+                        
                         return PacketResult{
                             ForwardAction::ArpReplyGenerated,
                             "Return ARP reply",
                             match_interface,
-                            out_frame
+                            build_packet(info)
                         };  
                     }
                     else {
@@ -163,11 +166,23 @@ PacketResult ForwardingEngine::process_packet(std::vector<std::uint8_t> frame, R
                         }
                         
                         if(icmp_frame->type == 0x08){
+
+                            if(!validate_icmp_echo_request(icmp_frame))
+                            {
+                                return PacketResult{
+                                    ForwardAction::Dropped,
+                                    "Malformed ICMP frame",
+                                    std::nullopt,
+                                    std::nullopt
+                                };
+                            }
+                            
+                            IcmpEchoReplyBuilderInfo info(frame, ethernet_frame->destination, ethernet_frame-> source, ipv4_frame->destination_ip, ipv4_frame->source_ip, *icmp_frame, *ipv4_frame, *ethernet_frame);
                             return PacketResult{
                                 ForwardAction::IcmpEchoReplyGenerated,
                                 "ICMP echo request to router interface",
                                 match_interface,
-                                generate_icmp_reply_frame(frame.data() + ethernet_frame->payload_offset + ipv4_frame->payload_offset, ipv4_frame->payload_length, *icmp_frame)
+                                build_packet(info)
                             };
                         }
                         else{
@@ -191,11 +206,44 @@ PacketResult ForwardingEngine::process_packet(std::vector<std::uint8_t> frame, R
                 
 
                 if(ipv4_frame->ttl <= 1){
+
+                    auto source_route = routing_table.lookup_trie(ipv4_frame->source_ip);
+
+                    if(!source_route.has_value())
+                    {
+                        return PacketResult{
+                            ForwardAction::Dropped,
+                            "Route not present in routing table",
+                            std::nullopt,
+                            std::nullopt
+                        }; 
+                    }
+                    
+                    auto interface = find_interface_by_name(source_route->interface_name);
+                    if(!interface.has_value())
+                    {
+                        return PacketResult{
+                            ForwardAction::Dropped,
+                            "source route interface not matching any of router interface",
+                            std::nullopt,
+                            std::nullopt
+                        }; 
+                    }
+
+                    IPv4Address arp_target =
+                        source_route->next_hop_ip.has_value()
+                            ? *source_route->next_hop_ip
+                            : ipv4_frame->source_ip;
+
+                    auto arp_entry = arp_cache.lookup(arp_target);
+
+                    IcmpTimeExceededBuilderInfo info(frame, interface->mac, arp_entry->mac, interface->ip, arp_entry->ip, *ipv4_frame, *ethernet_frame);
+
                     return PacketResult{
                         ForwardAction::IcmpTimeExceededGenerated,
                         "TTL expired",
-                        in_interface,
-                        build_icmp_time_exceeded(frame.data() + ethernet_frame->payload_offset, ethernet_frame->payload_length)
+                        interface,
+                        build_packet(info)
                     };
                 }
 
@@ -203,11 +251,44 @@ PacketResult ForwardingEngine::process_packet(std::vector<std::uint8_t> frame, R
 
                 if(!route.has_value())
                 {
+                    auto source_route = routing_table.lookup_trie(ipv4_frame->source_ip);
+                    
+                    if(!source_route.has_value())
+                    {
+                        return PacketResult{
+                            ForwardAction::Dropped,
+                            "Route not present in routing table",
+                            std::nullopt,
+                            std::nullopt
+                        }; 
+                    }
+                    
+                    auto interface = find_interface_by_name(source_route->interface_name);
+                    if(!interface.has_value())
+                    {
+                        return PacketResult{
+                            ForwardAction::Dropped,
+                            "source route interface not matching any of router interface",
+                            std::nullopt,
+                            std::nullopt
+                        }; 
+                    }
+
+
+                    IPv4Address arp_target =
+                        source_route->next_hop_ip.has_value()
+                            ? *source_route->next_hop_ip
+                            : ipv4_frame->source_ip;
+
+                    auto arp_entry = arp_cache.lookup(arp_target);
+                    
+                    IcmpDestinationUnreachableBuilderInfo info(frame, interface->mac, arp_entry->mac, interface->ip, arp_entry->ip, *ipv4_frame, *ethernet_frame);
+
                     return PacketResult{
                         ForwardAction::IcmpDestinationUnreachableGenerated,
                         "Unreachable destination",
                         in_interface,
-                        build_icmp_destination_unreachable(frame.data() + ethernet_frame->payload_offset, ethernet_frame->payload_length)
+                        build_packet(info)
                     };
                 }
                 auto out_interface = find_interface_by_name(route->interface_name);
@@ -276,6 +357,4 @@ PacketResult ForwardingEngine::process_packet(std::vector<std::uint8_t> frame, R
         std::nullopt,
         std::nullopt
     };
-
-
 }

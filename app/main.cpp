@@ -1,4 +1,5 @@
 #include "core/checksum.hpp"
+#include "demo/router_samples.hpp"
 #include "protocols/arp.hpp"
 #include "protocols/ethernet.hpp"
 #include "protocols/icmp.hpp"
@@ -309,7 +310,7 @@ void run_Arp_reply_demo(){
         if(ethernet_frame_old->ethernet_type == kEtherTypeARP){
             std::optional<ArpPacket> frame = parse_arp(packet.data() + ethernet_frame_old->payload_offset, ethernet_frame_old->payload_length);
         
-            if(frame.has_value()) reply = generate_arp_reply_frame(*ethernet_frame_old, *frame, interface.mac, interface.ip);
+            if(frame.has_value()) reply = build_arp_reply_payload( *frame, interface.mac, interface.ip);
             else std::cout << "Invalid ARP frame" << std::endl;
         }
         else std::cout << "Not ARP frame" << std::endl;
@@ -419,7 +420,7 @@ int main(){
 
     RouterInterface r1{
         "eth0", 
-        make_mac(0x00, 0x11, 0x22, 0x33, 0x44, 0x55), 
+        make_mac(0x02, 0x00, 0x00, 0x00, 0x00, 0x01), 
         make_ipv4(10, 0, 0, 1)
     };
 
@@ -430,6 +431,54 @@ int main(){
         make_ipv4(10, 0, 1, 1)
     };
 
+    std::vector<uint8_t> no_route_packet = {
+        // Ethernet
+        0x02,0x00,0x00,0x00,0x00,0x01,
+        0xaa,0xbb,0xcc,0xdd,0xee,0xff,
+        0x08,0x00,
+    
+        // IPv4
+        0x45,0x00,
+        0x00,0x1c,
+        0x12,0x34,
+        0x00,0x00,
+        0x40,                          // TTL = 64
+        0x11,
+        0x4e,0x8c,                     // checksum changes because TTL changed
+        0x0a,0x00,0x00,0x02,
+        0x08,0x08,0x08,0x08,
+    
+        // UDP
+        0x12,0x34,
+        0x00,0x35,
+        0x00,0x08,
+        0x00,0x00
+    };
+
+    RouterInterface in_interface = r1;
+
+
+    std::vector<RouterInterface> interfaces = {r1};
+    RoutingTable table = demo::samples::demo_routing_table();
+    ARPCache cache;
+    cache.insert(make_ipv4(10,0, 0, 2), make_mac(0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff));
+
+    table.add_route_trie(Route{
+        make_ipv4(10, 0, 0, 0),
+        24,
+        "eth0",
+        std::nullopt
+    });
+
+    ForwardingEngine newEngine(std::move(interfaces), std::move(table), std::move(cache));
+    auto out = newEngine.process_packet(no_route_packet, in_interface);
+
+    demo::print::print_packet_info(out);
+    if(out.output_bytes.has_value())
+    {
+        demo::print::print_bytes(*out.output_bytes, 0, out.output_bytes->size());
+    }
+    /*
     PacketResult p{
         ForwardAction::Forwarded,
         "Matched a route",
@@ -440,6 +489,7 @@ int main(){
     demo::print::print_packet_info(p);    
 
     std::vector<RouterInterface> interface_table = {r1, r2};
+    */
 
     /*
     for(size_t i=0; i<interface_table.size(); i++){

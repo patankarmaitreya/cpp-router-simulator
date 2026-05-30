@@ -27,6 +27,8 @@ struct PacketResult{
 
 class ForwardingEngine{
     public:
+        ForwardingEngine(std::vector<RouterInterface> interface, RoutingTable table, ARPCache cache) : 
+        router_interface(std::move(interface)), routing_table(std::move(table)), arp_cache(std::move(cache)){}
         PacketResult process_packet(std::vector<std::uint8_t> frame, RouterInterface in_interface);
         std::optional<RouterInterface> find_interface_by_name( const std::string& name) const;
 

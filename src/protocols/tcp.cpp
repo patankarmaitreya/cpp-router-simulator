@@ -9,19 +9,19 @@ std::optional<TcpSegment> parse_tcp(const uint8_t *data, size_t length)
 
     TcpSegment segment;
 
-    auto source_port = read_u16_be(data, 0, length);
+    auto source_port = read_u16_be(data, length, 0);
     if(source_port.has_value()) segment.source_port = *source_port;
     else return std::nullopt;
 
-    auto destination_port = read_u16_be(data, 2, length);
+    auto destination_port = read_u16_be(data, length, 2);
     if(destination_port.has_value()) segment.destination_port = *destination_port;
     else return std::nullopt;
 
-    auto sequence_number = read_u32_be(data, 4, length);
+    auto sequence_number = read_u32_be(data, length, 4);
     if(sequence_number.has_value()) segment.sequence_number = *sequence_number;
     else return std::nullopt;
 
-    auto acknowledgment_number = read_u32_be(data, 8, length);
+    auto acknowledgment_number = read_u32_be(data, length, 8);
     if(acknowledgment_number.has_value()) segment.acknowledgment_number = *acknowledgment_number;
     else return std::nullopt;
 
@@ -32,15 +32,15 @@ std::optional<TcpSegment> parse_tcp(const uint8_t *data, size_t length)
 
     segment.flags = data[13];
 
-    auto window_size = read_u16_be(data, 14, length);
+    auto window_size = read_u16_be(data, length, 14);
     if(window_size.has_value()) segment.window_size = *window_size;
     else return std::nullopt;
 
-    auto checksum = read_u16_be(data, 16, length);
+    auto checksum = read_u16_be(data, length, 16);
     if(checksum.has_value()) segment.checksum = *checksum;
     else return std::nullopt;
 
-    auto urgent_pointer = read_u16_be(data, 18, length);
+    auto urgent_pointer = read_u16_be(data, length, 18);
     if(urgent_pointer.has_value()) segment.urgent_pointer = *urgent_pointer;
     else return std::nullopt;
 

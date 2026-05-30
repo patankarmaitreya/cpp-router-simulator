@@ -49,45 +49,27 @@ std::optional<ArpPacket> parse_arp(const uint8_t *data, size_t length){
     return packet;
 }
 
-std::vector<uint8_t> generate_arp_reply_frame(const EthernetFrame& ethernet_header, const ArpPacket& arp_header, MacAddress router_mac, IPv4Address router_ip){
-    if (ethernet_header.ethernet_type != kEtherTypeARP) {
-        return {};
-    }
+std::vector<uint8_t> build_arp_reply_payload(const ArpPacket& arp_header, MacAddress router_mac, IPv4Address router_ip){
     
-    if (arp_header.opcode != ArpOpcode::request) {
-        return {};
-    }
+    std::vector<uint8_t> reply(28, 0);
     
-    std::vector<uint8_t> reply(42, 0);
-
-    for(size_t i=0; i<kMacAddressLength; i++){
-        reply[i] = ethernet_header.source.bytes[i];
-    } 
-
-    for(size_t i=0; i<kMacAddressLength; i++){
-        reply[i+6] = router_mac.bytes[i];
-    }
-
-    write_u16_be(reply, 12, kEtherTypeARP);
-
+    write_u16_be(reply, 0, arp_header.hardware_type);
+    write_u16_be(reply, 2, arp_header.protocol_type);
     
-    write_u16_be(reply, kEthernetHeaderLength+0, arp_header.hardware_type);
-    write_u16_be(reply, kEthernetHeaderLength+2, arp_header.protocol_type);
-    
-    reply[kEthernetHeaderLength+4] = arp_header.hardware_add_len;
-    reply[kEthernetHeaderLength+5] = arp_header.protocol_add_len;
+    reply[4] = arp_header.hardware_add_len;
+    reply[5] = arp_header.protocol_add_len;
 
-    write_u16_be(reply, kEthernetHeaderLength+6, static_cast<uint16_t>(ArpOpcode::reply));
+    write_u16_be(reply, 6, static_cast<uint16_t>(ArpOpcode::reply));
 
     for(int i=0; i<6; i++){
-        reply[i+kEthernetHeaderLength+8] = router_mac.bytes[i];
+        reply[i+8] = router_mac.bytes[i];
     }
-    write_u32_be(reply, kEthernetHeaderLength+14, ipv4_to_uint32(router_ip));
+    write_u32_be(reply, 14, ipv4_to_uint32(router_ip));
 
     for(int i=0; i<6; i++){
-        reply[i+kEthernetHeaderLength+18] = arp_header.sender_mac.bytes[i];
+        reply[i+18] = arp_header.sender_mac.bytes[i];
     }
-    write_u32_be(reply, kEthernetHeaderLength+24, ipv4_to_uint32(arp_header.sender_ip));
+    write_u32_be(reply, 24, ipv4_to_uint32(arp_header.sender_ip));
 
     return reply;
 }

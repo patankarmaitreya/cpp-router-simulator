@@ -1,6 +1,7 @@
 #pragma once
 
 #include <array>
+#include <vector>
 #include <cstddef>
 #include <cstdint>
 #include <optional>
@@ -38,3 +39,5 @@ std::optional<IPv4Address> extract_ip(const uint8_t* packet, size_t length, size
 IPv4Address make_ipv4(uint8_t a, uint8_t b, uint8_t c, uint8_t d);
 
 uint32_t ipv4_to_uint32(const IPv4Address& ip);
+
+std::vector<uint8_t> generate_ipv4_header(const IPv4Address& destinationIP, const IPv4Address& sourceIP, const uint8_t protocol, const std::vector<uint8_t>& payload);

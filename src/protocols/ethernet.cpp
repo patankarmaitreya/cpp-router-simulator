@@ -59,3 +59,19 @@ MacAddress make_mac(uint8_t a, uint8_t b, uint8_t c, uint8_t d, uint8_t e, uint8
     };
     return mac;
 }
+
+std::vector<uint8_t> generate_ethernet_header(const MacAddress& destinationMAC, const MacAddress& sourceMAC, uint16_t type){
+    std::vector<uint8_t> header(kEthernetHeaderLength);
+
+    for(size_t i = 0; i< kMacAddressLength; i++){
+        header[i] = destinationMAC.bytes[i];
+    }
+
+    for(size_t i = 0; i< kMacAddressLength; i++){
+        header[6+i] = sourceMAC.bytes[i];
+    }
+
+    write_u16_be(header, 12, type);
+
+    return header;
+}

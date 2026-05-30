@@ -2,7 +2,12 @@
 
 #include <cstdint>
 #include <optional>
-#include <vector> 
+#include <vector>
+
+constexpr uint8_t kIcmpTypeRequest = 0x08;
+constexpr uint8_t kIcmpTypeReply  = 0x00;
+constexpr uint8_t kIcmpTypeTimeExcedded  = 0x0b;
+constexpr uint8_t kIcmpTypeDestUnreachable  = 0x03;
 
 struct IcmpPacket{
     uint8_t type;
@@ -22,4 +27,6 @@ std::vector<uint8_t> build_icmp_error_message(uint8_t type, uint8_t code, const 
 
 std::vector<uint8_t> build_icmp_time_exceeded( const uint8_t* ipv4_data, size_t ipv4_length); 
 
-std::vector<uint8_t> build_icmp_destination_unreachable( const uint8_t* ipv4_data, size_t ipv4_length); 
+std::vector<uint8_t> build_icmp_destination_unreachable( const uint8_t* ipv4_data, size_t ipv4_length);
+
+bool validate_icmp_echo_request(const std::optional<IcmpPacket>& packet);

@@ -33,3 +33,5 @@ std::optional<MacAddress> extract_mac(const uint8_t* packet, size_t length, size
 bool extract_mac(const std::vector<uint8_t>& packet, size_t start_index, MacAddress& out_mac);
 
 MacAddress make_mac(uint8_t a, uint8_t b, uint8_t c, uint8_t d, uint8_t e, uint8_t f);
+
+std::vector<uint8_t> generate_ethernet_header(const MacAddress& destinationMAC, const MacAddress& sourceMAC, uint16_t type);

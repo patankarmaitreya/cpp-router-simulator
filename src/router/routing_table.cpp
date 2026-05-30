@@ -4,8 +4,6 @@
 #include <cstddef>
 #include <cstdint>
 #include <optional>
-#include <string>
-#include <iostream>
 
 void RoutingTable::add_route_linear(const Route& route) {
     routes.push_back(route);

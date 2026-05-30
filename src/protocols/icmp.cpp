@@ -42,16 +42,8 @@ std::optional<IcmpPacket> parse_icmp(const uint8_t *data, size_t length){
 }
 
 std::vector<uint8_t> generate_icmp_reply_frame(const uint8_t* request_data, size_t request_length, const IcmpPacket& request){
-    if (!request.identifier.has_value() || !request.sequence_number.has_value()) {
-        return {};
-    }
-
-    if (request_data == nullptr || request_length < 8) {
-        return {};
-    }
-    
     std::vector<uint8_t> out(8, 0);
-
+    
     out[0] = 0x00; // Echo Reply
     out[1] = 0x00; // Code
 
@@ -127,4 +119,10 @@ std::vector<uint8_t> build_icmp_destination_unreachable( const uint8_t* ipv4_dat
         ipv4_data,
         ipv4_length
     );
+}
+
+bool validate_icmp_echo_request(const std::optional<IcmpPacket>& packet){ 
+    if (!packet->identifier.has_value() || !packet->sequence_number.has_value()) return false;
+     
+    return true;
 }
