@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <optional>
 #include <vector>
+#include <string>
 
 constexpr std::size_t kMacAddressLength = 6;
 constexpr size_t kEthernetHeaderLength = 14;
