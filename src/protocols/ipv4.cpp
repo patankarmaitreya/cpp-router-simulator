@@ -67,7 +67,7 @@ std::optional<IPv4Address> extract_ip(const uint8_t* packet, size_t length, size
     if(start_index > length || length - start_index < 4) return std::nullopt;
 
     IPv4Address ip;
-    for(size_t i=0; i<kMacAddressLength; i++){
+    for(size_t i=0; i<4; i++){
         ip.bytes[i] = packet[i + start_index];
     }
 
