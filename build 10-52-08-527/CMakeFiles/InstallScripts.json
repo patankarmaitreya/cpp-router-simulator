@@ -1,9 +1,0 @@
-{
-	"InstallScripts" : 
-	[
-		"/Users/maitreyapatankar/Documents/Projects/cpp-router-simulator/build/cmake_install.cmake",
-		"/Users/maitreyapatankar/Documents/Projects/cpp-router-simulator/build/src/cmake_install.cmake",
-		"/Users/maitreyapatankar/Documents/Projects/cpp-router-simulator/build/app/cmake_install.cmake"
-	],
-	"Parallel" : false
-}
