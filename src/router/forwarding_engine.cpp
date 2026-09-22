@@ -236,15 +236,26 @@ PacketResult ForwardingEngine::process_packet(std::vector<std::uint8_t> frame, R
                             : ipv4_frame->source_ip;
 
                     auto arp_entry = arp_cache.lookup(arp_target);
+                    
+                    if(arp_entry.has_value())
+                    {
+                        IcmpTimeExceededBuilderInfo info(frame, interface->mac, arp_entry->mac, interface->ip, arp_entry->ip, *ipv4_frame, *ethernet_frame);
 
-                    IcmpTimeExceededBuilderInfo info(frame, interface->mac, arp_entry->mac, interface->ip, arp_entry->ip, *ipv4_frame, *ethernet_frame);
-
-                    return PacketResult{
-                        ForwardAction::IcmpTimeExceededGenerated,
-                        "TTL expired",
-                        interface,
-                        build_packet(info)
-                    };
+                        return PacketResult{
+                            ForwardAction::IcmpTimeExceededGenerated,
+                            "TTL expired",
+                            interface,
+                            build_packet(info)
+                        };
+                    }
+                    else{
+                        return PacketResult{
+                            ForwardAction::Dropped,
+                            "Arp target not present in cache",
+                            std::nullopt,
+                            std::nullopt
+                        };  
+                    }
                 }
 
                 auto route = routing_table.lookup_trie(ipv4_frame->destination_ip);
@@ -282,14 +293,25 @@ PacketResult ForwardingEngine::process_packet(std::vector<std::uint8_t> frame, R
 
                     auto arp_entry = arp_cache.lookup(arp_target);
                     
-                    IcmpDestinationUnreachableBuilderInfo info(frame, interface->mac, arp_entry->mac, interface->ip, arp_entry->ip, *ipv4_frame, *ethernet_frame);
+                    if(arp_entry.has_value())
+                    {
+                        IcmpDestinationUnreachableBuilderInfo info(frame, interface->mac, arp_entry->mac, interface->ip, arp_entry->ip, *ipv4_frame, *ethernet_frame);
 
-                    return PacketResult{
-                        ForwardAction::IcmpDestinationUnreachableGenerated,
-                        "Unreachable destination",
-                        in_interface,
-                        build_packet(info)
-                    };
+                        return PacketResult{
+                            ForwardAction::IcmpDestinationUnreachableGenerated,
+                            "Unreachable destination",
+                            in_interface,
+                            build_packet(info)
+                        };
+                    }
+                    else{
+                        return PacketResult{
+                            ForwardAction::Dropped,
+                            "Arp target not present in cache",
+                            std::nullopt,
+                            std::nullopt
+                        }; 
+                    }
                 }
                 auto out_interface = find_interface_by_name(route->interface_name);
 

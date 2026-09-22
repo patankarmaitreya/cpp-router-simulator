@@ -63,9 +63,3 @@ std::vector<uint8_t> build_packet(const IcmpEchoReplyBuilderInfo& info);
 std::vector<uint8_t> build_packet(const IcmpTimeExceededBuilderInfo& info);
 
 std::vector<uint8_t> build_packet(const IcmpDestinationUnreachableBuilderInfo& info);
-
-std::vector<uint8_t> build_icmp_echo_reply_frame(const std::vector<uint8_t>& inputFrame, const EthernetFrame& ethernetFrame, const IPv4Packet& ipv4Packet, const IcmpPacket& icmpPacket);
-
-std::vector<uint8_t> build_icmp_error_frame(const std::vector<uint8_t>& inputFrame, const EthernetFrame& ethernetFrame, const IPv4Packet& ipv4Packet, uint8_t type, const RouterInterface& interface);
-
-std::vector<uint8_t> generate_arp_reply_frame(const EthernetFrame& ethernetFrame, const ArpPacket& arpPacket, const RouterInterface& interfaceß);
